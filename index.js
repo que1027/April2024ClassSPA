@@ -15,14 +15,62 @@ function render(state = store.home) {
   `;
   router.updatePageLinks();
 
-  afterRender();
+  afterRender(state);
+
 }
 
-function afterRender() {
+function afterRender(state) {
   // add menu toggle to bars icon in nav bar
   document.querySelector(".fa-bars").addEventListener("click", () => {
     document.querySelector("nav > ul").classList.toggle("hidden--mobile");
   });
+
+  if (state.view === "order") {
+    // Add an event handler for the submit button on the form
+    document.querySelector("form").addEventListener("submit", event => {
+      event.preventDefault();
+  
+     // Get the form element
+      const inputList = event.target.elements;
+      console.log("Input Element List", inputList);
+  
+      //Create an empty array to hold the toppings
+      const toppings = [];
+  
+      // Iterate over the toppings array
+  
+      for (let input of inputList.toppings) {
+        // If the value of the checked attribute is true then add the value to the toppings array
+        if (input.checked) {
+          toppings.push(input.value);
+        }
+      }
+  
+      // Create a request body object to send to the API
+      const requestData = {
+        customer: inputList.customer.value,
+        crust: inputList.crust.value,
+        cheese: inputList.cheese.value,
+        sauce: inputList.sauce.value,
+        toppings: toppings
+      };
+       //Log the request body to the console
+       console.log("request Body", requestData);
+     
+       axios
+          //Make a POST request to the API to create a new pizza
+         .post(`${process.env.PIZZA_PLACE_API_URL}/pizzas`, requestData) 
+         .then(response => {
+        //Then push the new pizza onto the Pizza state pizzas attribute, so it can be displayed in the pizza list
+           store.pizza.pizzas.push(response.data);
+           router.navigate("/Pizza");
+         })
+        // If there is an error log it to the console
+         .catch(error => {
+           console.log("It puked", error);
+         });
+    });
+  }
 }
 
 // 723e0986e0f98b33c0d046e7f38d272c
@@ -47,6 +95,7 @@ router.hooks({
             `https://api.openweathermap.org/data/2.5/weather?appid=${process.env.OPEN_WEATHER_MAP_API_KEY}&units=imperial&q=st%20louis`
           )
           .then(response => {
+            console.log("Weather Data: ", response.data)
             // Create an object to be stored in the Home state from the response
             store.home.weather = {
               city: response.data.name,
